@@ -1,0 +1,134 @@
+version: '3.8'
+
+x-spark-common:
+  &spark-common
+    build:
+      context: .
+      dockerfile: Dockerfile.spark
+    volumes:
+      - ./data/spark:/Users/marthala/mydata/00_learning/data
+      - ./data/etl:/Users/marthala/mydata/00_learning/data/etl
+    networks:
+      - spark-net
+
+x-airflow-common:
+  &airflow-common
+  # build:
+  #     context: .
+  #     dockerfile: Dockerfile.airflow
+  image: apache/airflow:latest
+  environment:
+    &airflow-env
+    AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+    AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+    AIRFLOW__CORE__FERNET_KEY: ''
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
+    # _AIRFLOW_WWW_USER_USERNAME: airflow
+    # _AIRFLOW_WWW_USER_PASSWORD: airflow
+    AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: admin:admin
+    AIRFLOW__CORE__LOGGING_CONFIG_CLASS: 'airflow.config_templates.airflow_local_settings.DEFAULT_LOGGING_CONFIG'
+  volumes:
+    - ./data/airflow/dags:/opt/airflow/dags
+    - ./data/airflow/logs:/opt/airflow/logs
+    - ./data/airflow/plugins:/opt/airflow/plugins
+    - ./data/etl:/data/etl
+  depends_on:
+    - postgres
+    - redis
+  networks:
+    - spark-net
+
+services:
+  spark-master:
+    <<: *spark-common
+    hostname: master
+    container_name: spark-master
+    ports:
+      - "7077:7077"
+      - "9000:8080"
+    entrypoint: ["/bin/bash", "-c", "/opt/spark/sbin/start-master.sh && tail -f /dev/null"]
+
+  spark-worker-1:
+    <<: *spark-common
+    hostname: worker-1
+    container_name: spark-worker-1
+    depends_on:
+      - spark-master
+    entrypoint: ["/bin/bash", "-c", "/opt/spark/sbin/start-worker.sh spark://spark-master:7077 && tail -f /dev/null"]
+
+  spark-worker-2:
+    <<: *spark-common
+    hostname: worker-2
+    container_name: spark-worker-2
+    depends_on:
+      - spark-master
+    entrypoint: ["/bin/bash", "-c", "/opt/spark/sbin/start-worker.sh spark://spark-master:7077 && tail -f /dev/null"]
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      retries: 5
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    networks:
+      - spark-net
+
+  redis:
+    image: redis:latest
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 5
+    networks:
+      - spark-net
+
+  airflow-api:
+    <<: *airflow-common
+    command: api-server
+    ports:
+      - "9001:8080"
+    depends_on:
+      - airflow-scheduler
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+
+  airflow-worker:
+    <<: *airflow-common
+    command: celery worker
+
+  airflow-triggerer:
+    <<: *airflow-common
+    command: triggerer
+
+  airflow-dag-processor:
+    <<: *airflow-common
+    command: dag-processor
+
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command: -c "airflow db migrate"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres-db-volume:
+
+networks:
+  spark-net:
+    driver: bridge
