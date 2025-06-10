@@ -17,3 +17,4 @@ docker-compose up
 
 https://airflow.apache.org/docs/docker-stack/build.html
 
+spark-submit --master spark://spark-master:7077 --name ExtractNorthWindSalesData --verbose --deploy-mode client /data/etl/extract.py

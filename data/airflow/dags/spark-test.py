@@ -1,6 +1,5 @@
 from airflow import DAG
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
-# from airflow.operators.dummy import DummyOperator
 from airflow.operators.empty import EmptyOperator
 from datetime import datetime, timedelta
 
@@ -32,27 +31,8 @@ with DAG(
         verbose=True
     )
 
-    # transform = SparkSubmitOperator(
-    #     task_id="transform_sales_data",
-    #     application="/data/etl/transform.py",
-    #     name="TransformNorthWindSalesData",
-    #     # application_args=["--master", "spark://spark-master:7077"], 
-    #     conn_id='spark_default',
-    #     verbose=True
-    # )
-
-    # load = SparkSubmitOperator(
-    #     task_id="load_sales_data",
-    #     application="/data/etl/load.py",
-    #     name="LoadNorthWindSalesData",
-    #     # application_args=["--master", "spark://spark-master:7077"],
-    #     conn_id='spark_default',
-    #     verbose=True
-    # )
-
-
     end = EmptyOperator(task_id="end")
 
     start >> extract  >> end
 
-    # start >> extract >> transform >> load >> end
+
