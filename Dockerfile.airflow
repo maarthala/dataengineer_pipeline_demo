@@ -23,7 +23,5 @@ ENV SPARK_HOME=/opt/spark
 ENV PATH=$SPARK_HOME/bin:$JAVA_HOME/bin:$PATH
 
 USER airflow
-# RUN pip install --no-cache-dir --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-2.9.0/constraints-3.8.txt"  apache-airflow-providers-apache-spark
-# RUN pip install --no-cache-dir apache-airflow-providers-apache-spark
 ADD requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
