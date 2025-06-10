@@ -6,17 +6,16 @@ x-spark-common:
       context: .
       dockerfile: Dockerfile.spark
     volumes:
-      - ./data/spark:/Users/marthala/mydata/00_learning/data
-      - ./data/etl:/Users/marthala/mydata/00_learning/data/etl
+      - ./data/etl:/data/etl
     networks:
       - spark-net
 
 x-airflow-common:
   &airflow-common
-  # build:
-  #     context: .
-  #     dockerfile: Dockerfile.airflow
-  image: apache/airflow:latest
+  build:
+      context: .
+      dockerfile: Dockerfile.airflow
+  # image: apache/airflow:2.9.0-python3.12
   environment:
     &airflow-env
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
@@ -26,16 +25,14 @@ x-airflow-common:
     AIRFLOW__CORE__FERNET_KEY: ''
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
-    AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
-    # _AIRFLOW_WWW_USER_USERNAME: airflow
-    # _AIRFLOW_WWW_USER_PASSWORD: airflow
-    AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: admin:admin
-    AIRFLOW__CORE__LOGGING_CONFIG_CLASS: 'airflow.config_templates.airflow_local_settings.DEFAULT_LOGGING_CONFIG'
+    AIRFLOW_CONN_SPARK_DEFAULT: spark://spark-master:7077
   volumes:
+    # - ./data/airflow:/opt/airflow
     - ./data/airflow/dags:/opt/airflow/dags
     - ./data/airflow/logs:/opt/airflow/logs
     - ./data/airflow/plugins:/opt/airflow/plugins
     - ./data/etl:/data/etl
+    - ./requirements.txt:/requirements.txt
   depends_on:
     - postgres
     - redis
@@ -45,12 +42,12 @@ x-airflow-common:
 services:
   spark-master:
     <<: *spark-common
-    hostname: master
+    hostname: spark-master
     container_name: spark-master
     ports:
       - "7077:7077"
       - "9000:8080"
-    entrypoint: ["/bin/bash", "-c", "/opt/spark/sbin/start-master.sh && tail -f /dev/null"]
+    entrypoint: ["/bin/bash", "-c", "/opt/spark/sbin/start-master.sh --host spark-master && tail -f /dev/null"]
 
   spark-worker-1:
     <<: *spark-common
@@ -92,9 +89,9 @@ services:
     networks:
       - spark-net
 
-  airflow-api:
+  airflow-webserver:
     <<: *airflow-common
-    command: api-server
+    command: webserver
     ports:
       - "9001:8080"
     depends_on:
@@ -118,13 +115,13 @@ services:
 
   airflow-init:
     <<: *airflow-common
-    entrypoint: /bin/bash
-    command: -c "airflow db migrate"
+    command: bash -c "airflow db migrate && airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+
 
 volumes:
   postgres-db-volume:

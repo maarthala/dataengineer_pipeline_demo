@@ -7,4 +7,13 @@ http://localhost:9000/
 # Airflow
 http://localhost:9001/
 
-admin: 7ssUQydxZuAUQzdN
+
+version: apache/airflow:2.9.0-python3.12
+admin/admin - airflow
+
+docker-compose up airflow-init
+docker-compose up
+
+
+https://airflow.apache.org/docs/docker-stack/build.html
+
