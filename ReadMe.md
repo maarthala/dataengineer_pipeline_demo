@@ -61,7 +61,7 @@ http://localhost:3000/d/feolylok314hsd/country-sales?orgId=1&from=now-5m&to=now&
 Credentials: `admin / admin`
 
 
-## Add more order
+## Add more orders...
 To add more orders to the database, run:
 
 ```
