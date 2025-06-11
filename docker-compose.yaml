@@ -70,6 +70,22 @@ services:
       - spark-master
     entrypoint: ["/bin/bash", "-c", "/opt/spark/sbin/start-worker.sh spark://spark-master:7077 && tail -f /dev/null"]
 
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./data/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - postgres
+    networks:
+      - spark-net
+
   postgres:
     image: postgres:15
     environment:
@@ -80,8 +96,12 @@ services:
       test: ["CMD", "pg_isready", "-U", "airflow"]
       interval: 10s
       retries: 5
+    ports:
+      - "5432:5432"
     volumes:
       - postgres-db-volume:/var/lib/postgresql/data
+      - ./data/etl:/data/etl
+      - ./data/northwind:/docker-entrypoint-initdb.d
     networks:
       - spark-net
 
@@ -306,6 +326,7 @@ services:
 
 volumes:
   postgres-db-volume:
+  grafana-data:
 
 networks:
   spark-net:
