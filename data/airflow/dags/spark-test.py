@@ -27,7 +27,6 @@ with DAG(
         task_id="extract_sales_data",
         application="/data/etl/extract.py",
         name="ExtractNorthWindSalesData",
-        # conf=["--master", "spark://spark-master:7077"]
         verbose=True
     )
 
