@@ -1,16 +1,26 @@
 from pyspark import SparkConf, SparkContext
+from pyspark.sql import SparkSession
 
 
-conf = SparkConf().setAppName("WordCountApp")
-sc = SparkContext(conf=conf)
+def extract(spark, jdbc_url, props):
+    tables = ['orders', 'order_details', 'products', 'categories']
+    for table in tables:
+        df = spark.read.jdbc(jdbc_url, table, properties=props)
+        df.write.mode("overwrite").parquet(f"/data/tmp/{table}")
 
+def main():
+    spark = SparkSession.builder \
+        .appName("NorthWindSales Extract Job") \
+        .getOrCreate()
 
-rdd = sc.parallelize([
-    "hello world",
-    "this is a test",
-    "hello from spark"
-])
-words = rdd.flatMap(lambda line: line.split(" "))
-word_counts = words.map(lambda word: (word, 1)).reduceByKey(lambda a, b: a + b)
-print(word_counts.collect())
-sc.stop()
+    jdbc_url = "jdbc:postgresql://postgres:5432/northwind"
+
+    props = {"user": "airflow", "password": "airflow", "driver": "org.postgresql.Driver"}
+
+    extract(spark, jdbc_url, props)
+
+    spark.stop()
+
+if __name__ == "__main__":
+    main()
+

@@ -90,3 +90,5 @@ coverage.xml
 *.iml
 *.db
 *.sqlite3
+
+/data/tmp/*

@@ -7,6 +7,9 @@ x-spark-common:
       dockerfile: Dockerfile.spark
     volumes:
       - ./data/etl:/data/etl
+      - ./data/extras:/data/extras
+      - ./data/tmp:/data/tmp
+
     networks:
       - spark-net
 
@@ -30,10 +33,12 @@ x-airflow-common:
     AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
   volumes:
     - ./data/etl:/data/etl
-    - ./data/airflow//dags:/opt/airflow/dags
-    - ./data/airflow//logs:/opt/airflow/logs
-    - ./data/airflow//config:/opt/airflow/config
-    - ./data/airflow//plugins:/opt/airflow/plugins
+    - ./data/airflow/dags:/opt/airflow/dags
+    - ./data/airflow/logs:/opt/airflow/logs
+    - ./data/airflow/config:/opt/airflow/config
+    - ./data/airflow/plugins:/opt/airflow/plugins
+    - ./data/extras:/data/extras
+    - ./data/tmp:/data/tmp
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -81,6 +86,7 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       - ./data/grafana/provisioning:/etc/grafana/provisioning
+      - ./data/grafana/dashboards:/etc/grafana/provisioning/dashboards
     depends_on:
       - postgres
     networks:
