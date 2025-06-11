@@ -85,8 +85,9 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - grafana-data:/var/lib/grafana
-      - ./data/grafana/provisioning:/etc/grafana/provisioning
-      - ./data/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./data/grafana/provisioning/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ./data/grafana/provisioning/postgres.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ./data/grafana/dashboards:/var/lib/grafana/dashboards
     depends_on:
       - postgres
     networks:

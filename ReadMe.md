@@ -30,6 +30,10 @@ docker compose down --volumes --rmi all
 docker compose down --volumes --remove-orphans
 
 
+http://localhost:3000/d/feolylok314hsd/country-sales?orgId=1&from=now-5m&to=now&timezone=browser&refresh=10s
+
+
+
 
 # Others
 
